@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ptBR } from "@clerk/localizations";
 import { Toaster } from "sonner";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -32,6 +33,7 @@ export default function RootLayout({
         <body className="min-h-full flex flex-col">
           <TooltipProvider>{children}</TooltipProvider>
           <Toaster richColors position="bottom-right" />
+          <SpeedInsights />
         </body>
       </html>
     </ClerkProvider>
