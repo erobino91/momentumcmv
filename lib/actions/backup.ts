@@ -11,10 +11,6 @@ async function getUserId() {
   return userId;
 }
 
-/**
- * Restaura todos os dados de um backup no DB.
- * Faz delete + insert em transação por entidade.
- */
 export async function restaurarBackup(backup: BackupData): Promise<void> {
   const userId = await getUserId();
   const { materiasPrimas, receitas, produtos, configuracoes } = backup.data;
@@ -32,10 +28,10 @@ export async function restaurarBackup(backup: BackupData): Promise<void> {
           unidade: mp.unidade,
           custoUnitario: mp.custoUnitario,
           fatorCorrecao: mp.fatorCorrecao,
-          embalagem: mp.embalagem ?? undefined,
+          embalagem: (mp.embalagem ?? undefined) as unknown as object,
           fornecedor: mp.fornecedor,
           observacao: mp.observacao,
-          historicoPreco: mp.historicoPreco ?? [],
+          historicoPreco: (mp.historicoPreco ?? []) as unknown as object[],
           criadoEm: new Date(mp.criadoEm),
         })),
       });
@@ -52,7 +48,7 @@ export async function restaurarBackup(backup: BackupData): Promise<void> {
           categoria: r.categoria,
           rendimento: r.rendimento,
           unidadeRendimento: r.unidadeRendimento,
-          ingredientes: r.ingredientes ?? [],
+          ingredientes: (r.ingredientes ?? []) as unknown as object[],
           modoPreparo: r.modoPreparo,
           tempoPreparo: r.tempoPreparo,
           precoVenda: r.precoVenda,
@@ -73,7 +69,7 @@ export async function restaurarBackup(backup: BackupData): Promise<void> {
           categoria: p.categoria,
           rendimento: p.rendimento,
           unidadeRendimento: p.unidadeRendimento,
-          ingredientes: p.ingredientes ?? [],
+          ingredientes: (p.ingredientes ?? []) as unknown as object[],
           precoVenda: p.precoVenda,
           tempoPreparo: p.tempoPreparo,
           observacao: p.observacao,
