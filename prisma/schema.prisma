@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // url movida para prisma.config.ts (Prisma 7)
+}
+
+// Matérias-Primas
+model MateriaPrima {
+  id            String   @id @default(cuid())
+  userId        String
+
+  nome          String
+  categoria     String
+  unidade       String
+  custoUnitario Float
+  fatorCorrecao Float    @default(1)
+  embalagem     Json?
+  fornecedor    String?
+  observacao    String?
+  historicoPreco Json    @default("[]")
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// Receitas
+model Receita {
+  id                String   @id @default(cuid())
+  userId            String
+
+  nome              String
+  categoria         String
+  rendimento        Float
+  unidadeRendimento String
+  ingredientes      Json     @default("[]")
+  modoPreparo       String?
+  tempoPreparo      Int?
+  precoVenda        Float?
+  observacao        String?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// Produtos (itens do cardápio)
+model Produto {
+  id                String   @id @default(cuid())
+  userId            String
+
+  nome              String
+  categoria         String
+  rendimento        Float
+  unidadeRendimento String
+  ingredientes      Json     @default("[]")
+  precoVenda        Float
+  tempoPreparo      Int?
+  observacao        String?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// Ofertas / Combos
+model Oferta {
+  id           String   @id @default(cuid())
+  userId       String
+
+  nome         String
+  descricao    String?
+  itens        Json     @default("[]")
+  precoVenda   Float
+  ativo        Boolean  @default(true)
+
+  criadoEm    DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// Snapshots de CMV ao longo do tempo
+model SnapshotCmv {
+  id            String   @id @default(cuid())
+  userId        String
+
+  cmvMedio      Float?
+  metaCmv       Float
+  totalProdutos Int
+  acimaDaMeta   Int
+  detalhes      Json     @default("[]")
+
+  registradoEm DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, registradoEm])
+}
+
+// Configurações por usuário
+model Configuracao {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+
+  nomeEstabelecimento String   @default("")
+  metaCmv             Float    @default(35)
+
+  atualizadoEm DateTime @updatedAt
+}

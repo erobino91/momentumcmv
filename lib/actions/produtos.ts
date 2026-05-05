@@ -1,0 +1,104 @@
+"use server";
+
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/lib/prisma";
+import { Produto, ReceitaIngrediente } from "@/types";
+
+type DbProduto = Awaited<ReturnType<typeof db.produto.findFirst>>;
+
+function toType(row: NonNullable<DbProduto>): Produto {
+  return {
+    id: row.id,
+    nome: row.nome,
+    categoria: row.categoria as Produto["categoria"],
+    rendimento: row.rendimento,
+    unidadeRendimento: row.unidadeRendimento as Produto["unidadeRendimento"],
+    ingredientes: (row.ingredientes as ReceitaIngrediente[]) ?? [],
+    precoVenda: row.precoVenda,
+    tempoPreparo: row.tempoPreparo ?? undefined,
+    observacao: row.observacao ?? undefined,
+    criadoEm: row.criadoEm.toISOString(),
+    atualizadoEm: row.atualizadoEm.toISOString(),
+  };
+}
+
+async function getUserId() {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Não autenticado");
+  return userId;
+}
+
+export async function getProdutos(): Promise<Produto[]> {
+  const userId = await getUserId();
+  const rows = await db.produto.findMany({
+    where: { userId },
+    orderBy: { criadoEm: "asc" },
+  });
+  return rows.map(toType);
+}
+
+export async function criarProduto(
+  data: Omit<Produto, "id" | "criadoEm" | "atualizadoEm">
+): Promise<Produto> {
+  const userId = await getUserId();
+  const row = await db.produto.create({
+    data: {
+      userId,
+      nome: data.nome,
+      categoria: data.categoria,
+      rendimento: data.rendimento,
+      unidadeRendimento: data.unidadeRendimento,
+      ingredientes: data.ingredientes ?? [],
+      precoVenda: data.precoVenda,
+      tempoPreparo: data.tempoPreparo,
+      observacao: data.observacao,
+    },
+  });
+  return toType(row);
+}
+
+export async function atualizarProduto(
+  id: string,
+  data: Partial<Omit<Produto, "id" | "criadoEm">>
+): Promise<Produto> {
+  const userId = await getUserId();
+  const row = await db.produto.update({
+    where: { id, userId },
+    data: {
+      nome: data.nome,
+      categoria: data.categoria,
+      rendimento: data.rendimento,
+      unidadeRendimento: data.unidadeRendimento,
+      ingredientes: data.ingredientes ?? undefined,
+      precoVenda: data.precoVenda,
+      tempoPreparo: data.tempoPreparo,
+      observacao: data.observacao,
+    },
+  });
+  return toType(row);
+}
+
+export async function removerProduto(id: string): Promise<void> {
+  const userId = await getUserId();
+  await db.produto.delete({ where: { id, userId } });
+}
+
+export async function duplicarProduto(id: string): Promise<Produto> {
+  const userId = await getUserId();
+  const orig = await db.produto.findFirst({ where: { id, userId } });
+  if (!orig) throw new Error("Produto não encontrado");
+  const row = await db.produto.create({
+    data: {
+      userId,
+      nome: `Cópia de ${orig.nome}`,
+      categoria: orig.categoria,
+      rendimento: orig.rendimento,
+      unidadeRendimento: orig.unidadeRendimento,
+      ingredientes: orig.ingredientes,
+      precoVenda: orig.precoVenda,
+      tempoPreparo: orig.tempoPreparo,
+      observacao: orig.observacao,
+    },
+  });
+  return toType(row);
+}
