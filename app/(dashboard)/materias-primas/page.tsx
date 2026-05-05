@@ -34,31 +34,19 @@ import { Plus, Pencil, Trash2, Search, Package, Download, History, BarChart2, Lo
 import { exportCsv } from "@/lib/export-csv";
 import { ImportCsvButton } from "@/components/materias-primas/import-csv-dialog";
 
-const categoriaLabel: Record<string, string> = {
-  carnes: "Carnes",
-  aves: "Aves",
-  peixes: "Peixes",
-  laticinios: "Laticínios",
-  hortifruti: "Hortifruti",
-  graos: "Grãos",
-  bebidas: "Bebidas",
-  embalagens: "Embalagens",
-  temperos: "Temperos",
-  outros: "Outros",
-};
+const BADGE_CORES = [
+  "bg-red-100 text-red-700", "bg-orange-100 text-orange-700",
+  "bg-blue-100 text-blue-700", "bg-yellow-100 text-yellow-700",
+  "bg-green-100 text-green-700", "bg-amber-100 text-amber-700",
+  "bg-cyan-100 text-cyan-700", "bg-gray-100 text-gray-700",
+  "bg-purple-100 text-purple-700", "bg-slate-100 text-slate-700",
+  "bg-pink-100 text-pink-700", "bg-teal-100 text-teal-700",
+];
 
-const categoriaCor: Record<string, string> = {
-  carnes: "bg-red-100 text-red-700",
-  aves: "bg-orange-100 text-orange-700",
-  peixes: "bg-blue-100 text-blue-700",
-  laticinios: "bg-yellow-100 text-yellow-700",
-  hortifruti: "bg-green-100 text-green-700",
-  graos: "bg-amber-100 text-amber-700",
-  bebidas: "bg-cyan-100 text-cyan-700",
-  embalagens: "bg-gray-100 text-gray-700",
-  temperos: "bg-purple-100 text-purple-700",
-  outros: "bg-slate-100 text-slate-700",
-};
+function categoriaCor(categoria: string, todas: string[]) {
+  const idx = todas.indexOf(categoria);
+  return BADGE_CORES[(idx >= 0 ? idx : 0) % BADGE_CORES.length];
+}
 
 export default function MateriasPrimasPage() {
   const items = useMateriaPrimaStore((s) => s.items);
@@ -69,6 +57,7 @@ export default function MateriasPrimasPage() {
   const receitas = useReceitaStore((s) => s.items);
   const produtos = useProdutoStore((s) => s.items);
   const metaCmv = useConfiguracaoStore((s) => s.metaCmv);
+  const categoriasInsumo = useConfiguracaoStore((s) => s.categoriasInsumo);
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<MateriaPrima | null>(null);
@@ -80,7 +69,7 @@ export default function MateriasPrimasPage() {
     () => items.filter((mp) =>
       mp.nome.toLowerCase().includes(search.toLowerCase()) ||
       mp.fornecedor?.toLowerCase().includes(search.toLowerCase()) ||
-      categoriaLabel[mp.categoria]?.toLowerCase().includes(search.toLowerCase())
+      mp.categoria?.toLowerCase().includes(search.toLowerCase())
     ),
     [items, search]
   );
@@ -113,7 +102,7 @@ export default function MateriasPrimasPage() {
   function handleExport() {
     exportCsv("materias-primas.csv", items.map((mp) => ({
       Nome: mp.nome,
-      Categoria: categoriaLabel[mp.categoria] ?? mp.categoria,
+      Categoria: mp.categoria,
       Unidade: mp.unidade,
       "Custo Unitário (R$)": custoUnitarioEfetivo(mp).toFixed(4),
       "Custo Líquido (R$)": custoLiquido(mp).toFixed(4),
@@ -191,8 +180,8 @@ export default function MateriasPrimasPage() {
                 <TableRow key={mp.id} className={`group ${isMutating ? "opacity-60" : ""}`}>
                   <TableCell className="font-medium">{mp.nome}</TableCell>
                   <TableCell>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${categoriaCor[mp.categoria]}`}>
-                      {categoriaLabel[mp.categoria]}
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${categoriaCor(mp.categoria, categoriasInsumo)}`}>
+                      {mp.categoria}
                     </span>
                   </TableCell>
                   <TableCell>

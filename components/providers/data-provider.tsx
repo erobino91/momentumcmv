@@ -13,7 +13,7 @@ interface Props {
   mps: MateriaPrima[];
   receitas: Receita[];
   produtos: Produto[];
-  config: { nomeEstabelecimento: string; metaCmv: number };
+  config: { nomeEstabelecimento: string; metaCmv: number; categoriasInsumo: string[]; categoriasProduto: string[] };
   snapshots: SnapshotCmv[];
   ofertas: Oferta[];
   children: React.ReactNode;

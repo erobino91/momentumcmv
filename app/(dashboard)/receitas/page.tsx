@@ -19,12 +19,6 @@ import { Plus, Pencil, Trash2, Search, BookOpen, FileText, Copy, Download, Loade
 import { useConfiguracaoStore } from "@/store/configuracoes";
 import { exportCsv } from "@/lib/export-csv";
 
-const categoriaLabel: Record<string, string> = {
-  entrada: "Entrada", prato_principal: "Prato Principal", lanche: "Lanche",
-  pizza: "Pizza", massa: "Massas", porcao: "Porção", ingrediente: "Ingrediente / Preparo Base",
-  sobremesa: "Sobremesa", bebida: "Bebida", outro: "Outro",
-};
-
 function CmvBadge({ cmv, meta }: { cmv: number | null; meta: number }) {
   if (cmv === null) return <span className="text-muted-foreground text-sm">—</span>;
   const cor = cmv <= meta
@@ -60,7 +54,7 @@ export default function ReceitasPage() {
   const filtered = useMemo(
     () => items.filter((r) =>
       r.nome.toLowerCase().includes(search.toLowerCase()) ||
-      categoriaLabel[r.categoria]?.toLowerCase().includes(search.toLowerCase())
+      r.categoria?.toLowerCase().includes(search.toLowerCase())
     ),
     [items, search]
   );
@@ -70,7 +64,7 @@ export default function ReceitasPage() {
       const { custoTotal, custoPorcao, cmv } = calcularCustoReceita(r, mps, items);
       return {
         Nome: r.nome,
-        Categoria: categoriaLabel[r.categoria] ?? r.categoria,
+        Categoria: r.categoria,
         Ingredientes: r.ingredientes.length,
         "Rendimento": `${r.rendimento} ${r.unidadeRendimento}`,
         "Custo Total (R$)": custoTotal.toFixed(2),
@@ -152,7 +146,7 @@ export default function ReceitasPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm text-muted-foreground">{categoriaLabel[r.categoria]}</span>
+                      <span className="text-sm text-muted-foreground">{r.categoria}</span>
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge variant="outline" className="text-xs">{r.ingredientes.length}</Badge>

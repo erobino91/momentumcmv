@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Produto, CategoriaProduto, UnidadeRendimento,
+  Produto, UnidadeRendimento,
   ReceitaIngrediente, Receita, MateriaPrima,
   calcularCustoProduto, calcularCustoReceita, custoLiquido,
 } from "@/types";
@@ -16,16 +16,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Trash2, ArrowLeft, AlertCircle, BookOpen, Package, Calculator } from "lucide-react";
 import { useConfiguracaoStore } from "@/store/configuracoes";
-
-const categorias: { value: CategoriaProduto; label: string }[] = [
-  { value: "pizza", label: "Pizza" },
-  { value: "porcao", label: "Porção" },
-  { value: "a_la_carte", label: "À La Carte" },
-  { value: "entrada", label: "Entrada" },
-  { value: "salada", label: "Salada" },
-  { value: "sobremesa", label: "Sobremesa" },
-  { value: "bebida", label: "Bebida" },
-];
 
 const unidadesRendimento: { value: UnidadeRendimento; label: string }[] = [
   { value: "porcoes", label: "Porções" },
@@ -77,10 +67,10 @@ interface Props {
 
 export function ProdutoForm({ materiasPrimas, todasReceitas, initial, onSave }: Props) {
   const router = useRouter();
-  const { metaCmv: CMV_META } = useConfiguracaoStore();
+  const { metaCmv: CMV_META, categoriasProduto } = useConfiguracaoStore();
 
   const [nome, setNome] = useState(initial?.nome ?? "");
-  const [categoria, setCategoria] = useState<CategoriaProduto>(initial?.categoria ?? "a_la_carte");
+  const [categoria, setCategoria] = useState<string>(initial?.categoria ?? "");
   const [rendimento, setRendimento] = useState(initial?.rendimento?.toString() ?? "1");
   const [unidadeRendimento, setUnidadeRendimento] = useState<UnidadeRendimento>(initial?.unidadeRendimento ?? "porcoes");
   const [ingredientes, setIngredientes] = useState<ReceitaIngrediente[]>(
@@ -183,10 +173,10 @@ export function ProdutoForm({ materiasPrimas, todasReceitas, initial, onSave }: 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>Categoria</Label>
-                  <Select value={categoria} onValueChange={(v) => setCategoria(v as CategoriaProduto)}>
-                    <SelectTrigger><SelectValue>{categorias.find(c => c.value === categoria)?.label}</SelectValue></SelectTrigger>
+                  <Select value={categoria} onValueChange={(v) => setCategoria(v ?? "")}>
+                    <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
                     <SelectContent>
-                      {categorias.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                      {categoriasProduto.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>

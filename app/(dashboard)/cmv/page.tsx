@@ -11,11 +11,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TrendingDown, ShoppingBag, ChevronRight, AlertTriangle } from "lucide-react";
 
-const categoriaProdutoLabel: Record<string, string> = {
-  pizza: "Pizza", porcao: "Porção", a_la_carte: "À La Carte",
-  entrada: "Entrada", salada: "Salada", sobremesa: "Sobremesa", bebida: "Bebida",
-};
-
 function CmvBar({ cmv, meta }: { cmv: number; meta: number }) {
   const pct = Math.min((cmv / (meta * 2)) * 100, 100);
   const color = cmv <= meta ? "bg-green-500" : cmv <= meta * 1.15 ? "bg-amber-400" : "bg-red-500";
@@ -96,7 +91,7 @@ export default function CmvPage() {
       }, {})
     ).map(([cat, items]) => ({
       categoria: cat,
-      label: categoriaProdutoLabel[cat] ?? cat,
+      label: cat,
       items,
       cmvMedio: items.reduce((s, i) => s + i.cmv, 0) / items.length,
     })).sort((a, b) => b.cmvMedio - a.cmvMedio),
@@ -163,7 +158,7 @@ export default function CmvPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <p className="text-sm font-medium truncate">{d.produto.nome}</p>
-                    <span className="text-xs text-muted-foreground shrink-0">{categoriaProdutoLabel[d.produto.categoria]}</span>
+                    <span className="text-xs text-muted-foreground shrink-0">{d.produto.categoria}</span>
                   </div>
                   <CmvBar cmv={d.cmv} meta={META} />
                 </div>

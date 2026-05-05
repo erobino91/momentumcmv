@@ -8,12 +8,6 @@ import { calcularCustoProduto, calcularCustoReceita, custoLiquido } from "@/type
 import { Button } from "@/components/ui/button";
 import { Printer, FileText } from "lucide-react";
 
-const categoriaLabel: Record<string, string> = {
-  entrada: "Entrada", prato_principal: "Prato Principal", sobremesa: "Sobremesa",
-  bebida: "Bebida", lanche: "Lanche", massa: "Massa", pizza: "Pizza",
-  porcao: "Porção", ingrediente: "Ingrediente", outro: "Outro",
-};
-
 function fmt(n: number, dec = 2) {
   return n.toFixed(dec).replace(".", ",");
 }
@@ -180,7 +174,7 @@ export default function RelatorioPage() {
                       <td className="px-4 py-2.5 text-muted-foreground text-xs">{i + 1}</td>
                       <td className="px-4 py-2.5 font-medium">{produto.nome}</td>
                       <td className="px-4 py-2.5 text-muted-foreground text-xs">
-                        {categoriaLabel[produto.categoria] ?? produto.categoria}
+                        {produto.categoria}
                       </td>
                       <td className="px-4 py-2.5 text-right tabular-nums">R$ {fmt(produto.precoVenda)}</td>
                       <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">R$ {fmt(custoPorcao, 4)}</td>
@@ -297,7 +291,7 @@ export default function RelatorioPage() {
                     <tr key={receita.id}>
                       <td className="px-4 py-2.5 font-medium">{receita.nome}</td>
                       <td className="px-4 py-2.5 text-muted-foreground text-xs">
-                        {categoriaLabel[receita.categoria] ?? receita.categoria}
+                        {receita.categoria}
                       </td>
                       <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">
                         {receita.rendimento} {receita.unidadeRendimento}

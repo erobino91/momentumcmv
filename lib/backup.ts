@@ -12,6 +12,8 @@ export interface BackupData {
     configuracoes: {
       nomeEstabelecimento: string;
       metaCmv: number;
+      categoriasInsumo?: string[];
+      categoriasProduto?: string[];
     };
   };
 }
@@ -20,7 +22,7 @@ export function createBackup(
   materiasPrimas: MateriaPrima[],
   receitas: Receita[],
   produtos: Produto[],
-  configuracoes: { nomeEstabelecimento: string; metaCmv: number }
+  configuracoes: { nomeEstabelecimento: string; metaCmv: number; categoriasInsumo?: string[]; categoriasProduto?: string[] }
 ): BackupData {
   return {
     version: BACKUP_VERSION,

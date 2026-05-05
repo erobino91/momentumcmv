@@ -111,6 +111,8 @@ model Configuracao {
 
   nomeEstabelecimento String   @default("")
   metaCmv             Float    @default(35)
+  categoriasInsumo    Json     @default("[]")
+  categoriasProduto   Json     @default("[]")
 
   atualizadoEm DateTime @updatedAt
 }

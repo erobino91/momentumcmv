@@ -11,17 +11,6 @@ import { useState } from "react";
 import { ClipboardList, Search, FileText, BookOpen, ShoppingBag } from "lucide-react";
 import { useConfiguracaoStore } from "@/store/configuracoes";
 
-const categoriaReceitaLabel: Record<string, string> = {
-  entrada: "Entrada", prato_principal: "Prato Principal", lanche: "Lanche",
-  pizza: "Pizza", massa: "Massas", porcao: "Porção", ingrediente: "Ingrediente / Preparo Base",
-  sobremesa: "Sobremesa", bebida: "Bebida", outro: "Outro",
-};
-
-const categoriaProdutoLabel: Record<string, string> = {
-  pizza: "Pizza", porcao: "Porção", a_la_carte: "À La Carte",
-  entrada: "Entrada", salada: "Salada", sobremesa: "Sobremesa", bebida: "Bebida",
-};
-
 function CmvBadge({ cmv, meta }: { cmv: number | null; meta: number }) {
   if (cmv === null) return <span className="text-muted-foreground text-sm">—</span>;
   const cor = cmv <= meta
@@ -49,12 +38,12 @@ export default function FichasTecnicasPage() {
 
   const filteredReceitas = receitas.filter((r) =>
     r.nome.toLowerCase().includes(search.toLowerCase()) ||
-    categoriaReceitaLabel[r.categoria]?.toLowerCase().includes(search.toLowerCase())
+    r.categoria?.toLowerCase().includes(search.toLowerCase())
   );
 
   const filteredProdutos = produtos.filter((p) =>
     p.nome.toLowerCase().includes(search.toLowerCase()) ||
-    categoriaProdutoLabel[p.categoria]?.toLowerCase().includes(search.toLowerCase())
+    p.categoria?.toLowerCase().includes(search.toLowerCase())
   );
 
   const total = aba === "receitas" ? filteredReceitas.length : filteredProdutos.length;
@@ -132,7 +121,7 @@ export default function FichasTecnicasPage() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="font-semibold truncate">{r.nome}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{categoriaReceitaLabel[r.categoria]}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{r.categoria}</p>
                         </div>
                         <FileText className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5 group-hover:text-primary transition-colors" />
                       </div>
@@ -161,7 +150,7 @@ export default function FichasTecnicasPage() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="font-semibold truncate">{p.nome}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{categoriaProdutoLabel[p.categoria]}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{p.categoria}</p>
                         </div>
                         <FileText className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5 group-hover:text-primary transition-colors" />
                       </div>

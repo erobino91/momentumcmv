@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useConfiguracaoStore } from "@/store/configuracoes";
+import { useConfiguracaoStore, DEFAULT_CATEGORIAS_INSUMO, DEFAULT_CATEGORIAS_PRODUTO } from "@/store/configuracoes";
 import { useMateriaPrimaStore } from "@/store/materias-primas";
 import { useReceitaStore } from "@/store/receitas";
 import { useProdutoStore } from "@/store/produtos";
@@ -11,19 +11,126 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Download, Upload, AlertTriangle, Loader2 } from "lucide-react";
+import { CheckCircle2, Download, Upload, AlertTriangle, Loader2, Plus, X, RotateCcw } from "lucide-react";
 
 const CMV_META_MIN = 1;
 const CMV_META_MAX = 100;
 
+// ── Gerenciador de categorias ─────────────────────────────────────────────────
+function GerenciadorCategorias({
+  titulo,
+  descricao,
+  categorias,
+  defaults,
+  onChange,
+}: {
+  titulo: string;
+  descricao: string;
+  categorias: string[];
+  defaults: string[];
+  onChange: (novas: string[]) => void;
+}) {
+  const [nova, setNova] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function adicionar() {
+    const trimmed = nova.trim();
+    if (!trimmed) return;
+    if (categorias.map((c) => c.toLowerCase()).includes(trimmed.toLowerCase())) {
+      setNova("");
+      return;
+    }
+    onChange([...categorias, trimmed]);
+    setNova("");
+    inputRef.current?.focus();
+  }
+
+  function remover(cat: string) {
+    onChange(categorias.filter((c) => c !== cat));
+  }
+
+  function restaurarPadrao() {
+    onChange(defaults);
+  }
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="text-sm font-medium">{titulo}</p>
+        <p className="text-xs text-muted-foreground">{descricao}</p>
+      </div>
+
+      {/* Tags */}
+      <div className="flex flex-wrap gap-1.5 min-h-[2rem]">
+        {categorias.length === 0 ? (
+          <span className="text-xs text-muted-foreground italic py-1">Nenhuma categoria. Adicione abaixo ou restaure o padrão.</span>
+        ) : (
+          categorias.map((cat) => (
+            <span
+              key={cat}
+              className="inline-flex items-center gap-1 bg-muted text-foreground text-xs font-medium px-2.5 py-1 rounded-full border"
+            >
+              {cat}
+              <button
+                type="button"
+                onClick={() => remover(cat)}
+                className="text-muted-foreground hover:text-destructive transition-colors ml-0.5"
+                aria-label={`Remover ${cat}`}
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))
+        )}
+      </div>
+
+      {/* Adicionar */}
+      <div className="flex gap-2">
+        <Input
+          ref={inputRef}
+          placeholder="Nova categoria…"
+          value={nova}
+          onChange={(e) => setNova(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && adicionar()}
+          className="h-8 text-sm"
+        />
+        <Button size="sm" variant="outline" onClick={adicionar} disabled={!nova.trim()} className="gap-1 shrink-0">
+          <Plus className="w-3.5 h-3.5" />
+          Adicionar
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={restaurarPadrao}
+          className="gap-1 shrink-0 text-muted-foreground"
+          title="Restaurar categorias padrão"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Padrão</span>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ── Página principal ──────────────────────────────────────────────────────────
 export default function ConfiguracoesPage() {
-  const { nomeEstabelecimento, metaCmv, set, hydrate: hydrateConfig } = useConfiguracaoStore();
+  const {
+    nomeEstabelecimento,
+    metaCmv,
+    categoriasInsumo,
+    categoriasProduto,
+    set,
+    hydrate: hydrateConfig,
+  } = useConfiguracaoStore();
   const { items: mps, hydrate: hydrateMps } = useMateriaPrimaStore();
   const { items: receitas, hydrate: hydrateReceitas } = useReceitaStore();
   const { items: produtos, hydrate: hydrateProdutos } = useProdutoStore();
 
   const [nome, setNome] = useState(nomeEstabelecimento);
   const [meta, setMeta] = useState(metaCmv.toString());
+  const [localCategoriasInsumo, setLocalCategoriasInsumo] = useState<string[]>(categoriasInsumo);
+  const [localCategoriasProduto, setLocalCategoriasProduto] = useState<string[]>(categoriasProduto);
   const [saved, setSaved] = useState(false);
   const [restoreError, setRestoreError] = useState<string | null>(null);
   const [restoreOk, setRestoreOk] = useState(false);
@@ -33,10 +140,12 @@ export default function ConfiguracoesPage() {
   useEffect(() => {
     setNome(nomeEstabelecimento);
     setMeta(metaCmv.toString());
-  }, [nomeEstabelecimento, metaCmv]);
+    setLocalCategoriasInsumo(categoriasInsumo);
+    setLocalCategoriasProduto(categoriasProduto);
+  }, [nomeEstabelecimento, metaCmv, categoriasInsumo, categoriasProduto]);
 
   function handleExport() {
-    const backup = createBackup(mps, receitas, produtos, { nomeEstabelecimento, metaCmv });
+    const backup = createBackup(mps, receitas, produtos, { nomeEstabelecimento, metaCmv, categoriasInsumo, categoriasProduto });
     downloadBackup(backup);
   }
 
@@ -60,14 +169,17 @@ export default function ConfiguracoesPage() {
         setRestoring(true);
         setRestoreError(null);
 
-        // Persiste no DB (fonte da verdade)
         await restaurarBackup(raw);
 
-        // Hidrata os stores locais (sem disparar novas writes)
         hydrateMps(raw.data.materiasPrimas);
         hydrateReceitas(raw.data.receitas);
         hydrateProdutos(raw.data.produtos);
-        hydrateConfig(raw.data.configuracoes);
+        hydrateConfig({
+          nomeEstabelecimento: raw.data.configuracoes.nomeEstabelecimento,
+          metaCmv: raw.data.configuracoes.metaCmv,
+          categoriasInsumo: raw.data.configuracoes.categoriasInsumo ?? [],
+          categoriasProduto: raw.data.configuracoes.categoriasProduto ?? [],
+        });
 
         setRestoreOk(true);
         setTimeout(() => setRestoreOk(false), 3000);
@@ -84,7 +196,12 @@ export default function ConfiguracoesPage() {
   function handleSave() {
     const metaNum = parseFloat(meta);
     if (!metaNum || metaNum < CMV_META_MIN || metaNum > CMV_META_MAX) return;
-    set({ nomeEstabelecimento: nome.trim(), metaCmv: metaNum });
+    set({
+      nomeEstabelecimento: nome.trim(),
+      metaCmv: metaNum,
+      categoriasInsumo: localCategoriasInsumo,
+      categoriasProduto: localCategoriasProduto,
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   }
@@ -93,13 +210,14 @@ export default function ConfiguracoesPage() {
   const metaInvalida = metaNum < CMV_META_MIN || metaNum > CMV_META_MAX;
 
   return (
-    <div className="p-4 md:p-8 max-w-xl">
+    <div className="p-4 md:p-8 max-w-2xl">
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Configurações</h1>
         <p className="text-muted-foreground text-sm mt-1">Parâmetros gerais do sistema</p>
       </div>
 
       <div className="space-y-6">
+        {/* Estabelecimento */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Estabelecimento</CardTitle>
@@ -120,6 +238,7 @@ export default function ConfiguracoesPage() {
           </CardContent>
         </Card>
 
+        {/* Meta CMV */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Metas de CMV</CardTitle>
@@ -127,7 +246,7 @@ export default function ConfiguracoesPage() {
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="meta">Meta de CMV (%)</Label>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <Input
                   id="meta"
                   type="number"
@@ -163,7 +282,6 @@ export default function ConfiguracoesPage() {
               </p>
             </div>
 
-            {/* Preview das faixas */}
             <div className="border rounded-lg p-3 space-y-2 bg-muted/30">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Faixas de classificação</p>
               <div className="flex items-center gap-2 text-sm">
@@ -182,6 +300,34 @@ export default function ConfiguracoesPage() {
           </CardContent>
         </Card>
 
+        {/* Categorias */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Categorias</CardTitle>
+            <CardDescription>
+              Personalize as categorias disponíveis para matérias-primas e produtos. Pode deixar vazio se preferir não categorizar.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <GerenciadorCategorias
+              titulo="Matérias-primas"
+              descricao="Usadas no cadastro de ingredientes e insumos."
+              categorias={localCategoriasInsumo}
+              defaults={DEFAULT_CATEGORIAS_INSUMO}
+              onChange={setLocalCategoriasInsumo}
+            />
+            <div className="border-t" />
+            <GerenciadorCategorias
+              titulo="Produtos"
+              descricao="Usadas no cadastro de produtos do cardápio."
+              categorias={localCategoriasProduto}
+              defaults={DEFAULT_CATEGORIAS_PRODUTO}
+              onChange={setLocalCategoriasProduto}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Salvar */}
         <div className="flex items-center gap-3">
           <Button onClick={handleSave} disabled={metaInvalida}>
             Salvar configurações
@@ -203,7 +349,7 @@ export default function ConfiguracoesPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <Button variant="outline" className="gap-2" onClick={handleExport}>
                 <Download className="w-4 h-4" />
                 Exportar backup
@@ -236,7 +382,7 @@ export default function ConfiguracoesPage() {
 
             <div className="border rounded-lg p-3 bg-muted/30 space-y-1.5">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Dados atuais</p>
-              <div className="flex gap-4 text-sm">
+              <div className="flex flex-wrap gap-4 text-sm">
                 <span><strong>{mps.length}</strong> matérias-primas</span>
                 <span><strong>{receitas.length}</strong> receitas</span>
                 <span><strong>{produtos.length}</strong> produtos</span>

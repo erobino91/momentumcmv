@@ -1,8 +1,7 @@
 export type UnidadeMedida = "kg" | "g" | "L" | "ml" | "un" | "cx" | "dz" | "pct";
 
-export type CategoriaInsumo =
-  | "carnes" | "aves" | "peixes" | "laticinios" | "hortifruti"
-  | "graos" | "bebidas" | "embalagens" | "temperos" | "outros";
+// Categorias são dinâmicas — definidas pelo usuário em Configurações
+export type CategoriaInsumo = string;
 
 export interface HistoricoPrecoEntry {
   data: string; // ISO date
@@ -44,8 +43,8 @@ export function custoLiquido(mp: MateriaPrima): number {
 
 // ─── Produtos ────────────────────────────────────────────────────────────────
 
-export type CategoriaProduto =
-  | "pizza" | "porcao" | "a_la_carte" | "entrada" | "salada" | "sobremesa" | "bebida";
+// Categorias são dinâmicas — definidas pelo usuário em Configurações
+export type CategoriaProduto = string;
 
 export interface Produto {
   id: string;
@@ -79,9 +78,7 @@ export function calcularCustoProduto(
 
 // ─── Receitas ────────────────────────────────────────────────────────────────
 
-export type CategoriaReceita =
-  | "entrada" | "prato_principal" | "sobremesa" | "bebida"
-  | "lanche" | "massa" | "pizza" | "porcao" | "ingrediente" | "outro";
+export type CategoriaReceita = string;
 
 // g e ml adicionados para sub-receitas pesadas/volumétricas
 export type UnidadeRendimento = "porcoes" | "unidades" | "kg" | "g" | "L" | "ml";

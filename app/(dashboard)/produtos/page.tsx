@@ -15,11 +15,6 @@ import { Plus, Pencil, Trash2, Search, ShoppingBag, FileText, Copy, Download, Lo
 import { useConfiguracaoStore } from "@/store/configuracoes";
 import { exportCsv } from "@/lib/export-csv";
 
-const categoriaLabel: Record<string, string> = {
-  pizza: "Pizza", porcao: "Porção", a_la_carte: "À La Carte",
-  entrada: "Entrada", salada: "Salada", sobremesa: "Sobremesa", bebida: "Bebida",
-};
-
 function CmvBadge({ cmv, meta }: { cmv: number; meta: number }) {
   const cor = cmv <= meta
     ? "bg-green-100 text-green-700"
@@ -55,7 +50,7 @@ export default function ProdutosPage() {
   const filtered = useMemo(
     () => items.filter((p) =>
       p.nome.toLowerCase().includes(search.toLowerCase()) ||
-      categoriaLabel[p.categoria]?.toLowerCase().includes(search.toLowerCase())
+      p.categoria?.toLowerCase().includes(search.toLowerCase())
     ),
     [items, search]
   );
@@ -65,7 +60,7 @@ export default function ProdutosPage() {
       const { custoPorcao, cmv } = calcularCustoProduto(p, mps, receitas);
       return {
         Nome: p.nome,
-        Categoria: categoriaLabel[p.categoria] ?? p.categoria,
+        Categoria: p.categoria,
         "Custo/Porção (R$)": custoPorcao.toFixed(2),
         "Preço Venda (R$)": p.precoVenda.toFixed(2),
         "CMV (%)": cmv.toFixed(1),
@@ -140,7 +135,7 @@ export default function ProdutosPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm text-muted-foreground">{categoriaLabel[p.categoria]}</span>
+                      <span className="text-sm text-muted-foreground">{p.categoria}</span>
                     </TableCell>
                     <TableCell className="text-right tabular-nums font-medium">
                       R$ {custoPorcao.toFixed(2)}

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { MateriaPrima, UnidadeMedida, CategoriaInsumo } from "@/types";
+import { MateriaPrima, UnidadeMedida } from "@/types";
+import { useConfiguracaoStore } from "@/store/configuracoes";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +25,7 @@ import {
 
 type FormValues = {
   nome: string;
-  categoria: CategoriaInsumo;
+  categoria: string;
   unidade: UnidadeMedida;
   // custo direto
   custoUnitario: string;
@@ -49,19 +50,6 @@ const unidades: { value: UnidadeMedida; label: string }[] = [
   { value: "pct", label: "pct — Pacote" },
 ];
 
-const categorias: { value: CategoriaInsumo; label: string }[] = [
-  { value: "carnes", label: "Carnes" },
-  { value: "aves", label: "Aves" },
-  { value: "peixes", label: "Peixes e Frutos do Mar" },
-  { value: "laticinios", label: "Laticínios" },
-  { value: "hortifruti", label: "Hortifruti" },
-  { value: "graos", label: "Grãos e Cereais" },
-  { value: "bebidas", label: "Bebidas" },
-  { value: "embalagens", label: "Embalagens" },
-  { value: "temperos", label: "Temperos e Condimentos" },
-  { value: "outros", label: "Outros" },
-];
-
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -71,10 +59,11 @@ interface Props {
 
 export function MateriaPrimaFormDialog({ open, onClose, onSave, initial }: Props) {
   const [usaEmbalagem, setUsaEmbalagem] = useState(false);
+  const categoriasInsumo = useConfiguracaoStore((s) => s.categoriasInsumo);
 
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<FormValues>({
     defaultValues: {
-      nome: "", categoria: "outros", unidade: "kg",
+      nome: "", categoria: "", unidade: "kg",
       custoUnitario: "", fatorCorrecao: "1",
       embalagemDescricao: "", embalagemQtd: "", embalagemCusto: "",
       fornecedor: "", observacao: "",
@@ -101,7 +90,7 @@ export function MateriaPrimaFormDialog({ open, onClose, onSave, initial }: Props
       } else {
         setUsaEmbalagem(false);
         reset({
-          nome: "", categoria: "outros", unidade: "kg",
+          nome: "", categoria: "", unidade: "kg",
           custoUnitario: "", fatorCorrecao: "1",
           embalagemDescricao: "", embalagemQtd: "", embalagemCusto: "",
           fornecedor: "", observacao: "",
@@ -177,10 +166,10 @@ export function MateriaPrimaFormDialog({ open, onClose, onSave, initial }: Props
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Categoria *</Label>
-              <Select value={categoriaValue} onValueChange={(v) => setValue("categoria", v as CategoriaInsumo)}>
-                <SelectTrigger><SelectValue>{categorias.find(c => c.value === categoriaValue)?.label}</SelectValue></SelectTrigger>
+              <Select value={categoriaValue} onValueChange={(v) => setValue("categoria", v ?? "")}>
+                <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
                 <SelectContent>
-                  {categorias.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  {categoriasInsumo.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
