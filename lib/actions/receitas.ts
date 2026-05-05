@@ -1,6 +1,7 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
+import { unstable_cache, revalidateTag } from "next/cache";
 import { db } from "@/lib/prisma";
 import { Receita, ReceitaIngrediente } from "@/types";
 
@@ -29,13 +30,21 @@ async function getUserId() {
   return userId;
 }
 
+const _getReceitas = unstable_cache(
+  async (userId: string) => {
+    const rows = await db.receita.findMany({
+      where: { userId },
+      orderBy: { criadoEm: "asc" },
+    });
+    return rows.map(toType);
+  },
+  ["receitas"],
+  { tags: ["receitas"], revalidate: 30 }
+);
+
 export async function getReceitas(): Promise<Receita[]> {
   const userId = await getUserId();
-  const rows = await db.receita.findMany({
-    where: { userId },
-    orderBy: { criadoEm: "asc" },
-  });
-  return rows.map(toType);
+  return _getReceitas(userId);
 }
 
 export async function criarReceita(
@@ -56,6 +65,7 @@ export async function criarReceita(
       observacao: data.observacao,
     },
   });
+  revalidateTag("receitas", "max");
   return toType(row);
 }
 
@@ -78,12 +88,14 @@ export async function atualizarReceita(
       observacao: data.observacao,
     },
   });
+  revalidateTag("receitas", "max");
   return toType(row);
 }
 
 export async function removerReceita(id: string): Promise<void> {
   const userId = await getUserId();
   await db.receita.delete({ where: { id, userId } });
+  revalidateTag("receitas", "max");
 }
 
 export async function duplicarReceita(id: string): Promise<Receita> {
@@ -104,5 +116,6 @@ export async function duplicarReceita(id: string): Promise<Receita> {
       observacao: orig.observacao,
     },
   });
+  revalidateTag("receitas", "max");
   return toType(row);
 }

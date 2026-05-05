@@ -1,6 +1,7 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
+import { unstable_cache, revalidateTag } from "next/cache";
 import { db } from "@/lib/prisma";
 import { MateriaPrima, HistoricoPrecoEntry } from "@/types";
 
@@ -29,13 +30,21 @@ async function getUserId() {
   return userId;
 }
 
+const _getMateriasPrimas = unstable_cache(
+  async (userId: string) => {
+    const rows = await db.materiaPrima.findMany({
+      where: { userId },
+      orderBy: { criadoEm: "asc" },
+    });
+    return rows.map(toType);
+  },
+  ["mps"],
+  { tags: ["mps"], revalidate: 30 }
+);
+
 export async function getMateriasPrimas(): Promise<MateriaPrima[]> {
   const userId = await getUserId();
-  const rows = await db.materiaPrima.findMany({
-    where: { userId },
-    orderBy: { criadoEm: "asc" },
-  });
-  return rows.map(toType);
+  return _getMateriasPrimas(userId);
 }
 
 export async function criarMateriaPrima(
@@ -56,6 +65,7 @@ export async function criarMateriaPrima(
       historicoPreco: (data.historicoPreco ?? []) as unknown as object[],
     },
   });
+  revalidateTag("mps", "max");
   return toType(row);
 }
 
@@ -78,10 +88,12 @@ export async function atualizarMateriaPrima(
       historicoPreco: (data.historicoPreco ?? undefined) as unknown as object[],
     },
   });
+  revalidateTag("mps", "max");
   return toType(row);
 }
 
 export async function removerMateriaPrima(id: string): Promise<void> {
   const userId = await getUserId();
   await db.materiaPrima.delete({ where: { id, userId } });
+  revalidateTag("mps", "max");
 }

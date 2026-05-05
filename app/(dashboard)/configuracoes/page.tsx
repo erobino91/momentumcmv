@@ -16,7 +16,6 @@ import { CheckCircle2, Download, Upload, AlertTriangle, Loader2, Plus, X, Rotate
 const CMV_META_MIN = 1;
 const CMV_META_MAX = 100;
 
-// ── Gerenciador de categorias ─────────────────────────────────────────────────
 function GerenciadorCategorias({
   titulo,
   descricao,
@@ -49,26 +48,32 @@ function GerenciadorCategorias({
     onChange(categorias.filter((c) => c !== cat));
   }
 
-  function restaurarPadrao() {
-    onChange(defaults);
-  }
-
   return (
     <div className="space-y-3">
-      <div>
-        <p className="text-sm font-medium">{titulo}</p>
-        <p className="text-xs text-muted-foreground">{descricao}</p>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold">{titulo}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{descricao}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => onChange(defaults)}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-0.5"
+          title="Restaurar padrão"
+        >
+          <RotateCcw className="w-3 h-3" />
+          Padrão
+        </button>
       </div>
 
-      {/* Tags */}
-      <div className="flex flex-wrap gap-1.5 min-h-[2rem]">
+      <div className="flex flex-wrap gap-1.5 min-h-[2.25rem] p-2 rounded-md border bg-muted/20">
         {categorias.length === 0 ? (
-          <span className="text-xs text-muted-foreground italic py-1">Nenhuma categoria. Adicione abaixo ou restaure o padrão.</span>
+          <span className="text-xs text-muted-foreground italic self-center px-1">Vazio — sem categorias</span>
         ) : (
           categorias.map((cat) => (
             <span
               key={cat}
-              className="inline-flex items-center gap-1 bg-muted text-foreground text-xs font-medium px-2.5 py-1 rounded-full border"
+              className="inline-flex items-center gap-1 bg-background text-foreground text-xs font-medium px-2.5 py-1 rounded-full border shadow-sm"
             >
               {cat}
               <button
@@ -84,7 +89,6 @@ function GerenciadorCategorias({
         )}
       </div>
 
-      {/* Adicionar */}
       <div className="flex gap-2">
         <Input
           ref={inputRef}
@@ -98,22 +102,11 @@ function GerenciadorCategorias({
           <Plus className="w-3.5 h-3.5" />
           Adicionar
         </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={restaurarPadrao}
-          className="gap-1 shrink-0 text-muted-foreground"
-          title="Restaurar categorias padrão"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Padrão</span>
-        </Button>
       </div>
     </div>
   );
 }
 
-// ── Página principal ──────────────────────────────────────────────────────────
 export default function ConfiguracoesPage() {
   const {
     nomeEstabelecimento,
@@ -161,16 +154,10 @@ export default function ConfiguracoesPage() {
     reader.onload = async (ev) => {
       try {
         const raw = JSON.parse(ev.target?.result as string);
-        if (!validateBackup(raw)) {
-          setRestoreError("Arquivo inválido ou versão incompatível.");
-          return;
-        }
-
+        if (!validateBackup(raw)) { setRestoreError("Arquivo inválido ou versão incompatível."); return; }
         setRestoring(true);
         setRestoreError(null);
-
         await restaurarBackup(raw);
-
         hydrateMps(raw.data.materiasPrimas);
         hydrateReceitas(raw.data.receitas);
         hydrateProdutos(raw.data.produtos);
@@ -180,7 +167,6 @@ export default function ConfiguracoesPage() {
           categoriasInsumo: raw.data.configuracoes.categoriasInsumo ?? [],
           categoriasProduto: raw.data.configuracoes.categoriasProduto ?? [],
         });
-
         setRestoreOk(true);
         setTimeout(() => setRestoreOk(false), 3000);
       } catch {
@@ -196,12 +182,7 @@ export default function ConfiguracoesPage() {
   function handleSave() {
     const metaNum = parseFloat(meta);
     if (!metaNum || metaNum < CMV_META_MIN || metaNum > CMV_META_MAX) return;
-    set({
-      nomeEstabelecimento: nome.trim(),
-      metaCmv: metaNum,
-      categoriasInsumo: localCategoriasInsumo,
-      categoriasProduto: localCategoriasProduto,
-    });
+    set({ nomeEstabelecimento: nome.trim(), metaCmv: metaNum, categoriasInsumo: localCategoriasInsumo, categoriasProduto: localCategoriasProduto });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   }
@@ -210,186 +191,183 @@ export default function ConfiguracoesPage() {
   const metaInvalida = metaNum < CMV_META_MIN || metaNum > CMV_META_MAX;
 
   return (
-    <div className="p-4 md:p-8 max-w-2xl">
+    <div className="p-4 md:p-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Configurações</h1>
         <p className="text-muted-foreground text-sm mt-1">Parâmetros gerais do sistema</p>
       </div>
 
-      <div className="space-y-6">
-        {/* Estabelecimento */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Estabelecimento</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="nome">Nome do estabelecimento</Label>
-              <Input
-                id="nome"
-                placeholder="Ex: Pizzaria do João"
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Aparece no cabeçalho das fichas técnicas impressas.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Grid principal: esquerda config, direita categorias */}
+      <div className="grid grid-cols-1 xl:grid-cols-5 gap-6 items-start">
 
-        {/* Meta CMV */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Metas de CMV</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="meta">Meta de CMV (%)</Label>
-              <div className="flex flex-wrap items-center gap-3">
+        {/* Coluna esquerda — 2/5 */}
+        <div className="xl:col-span-2 space-y-6">
+
+          {/* Estabelecimento */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Estabelecimento</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="nome">Nome</Label>
                 <Input
-                  id="meta"
-                  type="number"
-                  min={CMV_META_MIN}
-                  max={CMV_META_MAX}
-                  step="0.5"
-                  className="w-32"
-                  value={meta}
-                  onChange={(e) => setMeta(e.target.value)}
+                  id="nome"
+                  placeholder="Ex: Pizzaria do João"
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
                 />
-                <div className="flex gap-2">
-                  {[28, 30, 32, 35, 38].map((v) => (
-                    <button
-                      key={v}
-                      onClick={() => setMeta(v.toString())}
-                      className={`text-xs px-2.5 py-1 rounded border transition-colors ${
-                        parseFloat(meta) === v
-                          ? "bg-primary text-white border-primary"
-                          : "hover:border-primary hover:text-primary"
-                      }`}
-                    >
-                      {v}%
-                    </button>
-                  ))}
+                <p className="text-xs text-muted-foreground">Aparece no cabeçalho das fichas técnicas.</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Meta CMV */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Meta de CMV</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="meta">Percentual (%)</Label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Input
+                    id="meta"
+                    type="number"
+                    min={CMV_META_MIN}
+                    max={CMV_META_MAX}
+                    step="0.5"
+                    className="w-24"
+                    value={meta}
+                    onChange={(e) => setMeta(e.target.value)}
+                  />
+                  <div className="flex gap-1.5">
+                    {[28, 30, 32, 35, 38].map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => setMeta(v.toString())}
+                        className={`text-xs px-2 py-1 rounded border transition-colors ${
+                          parseFloat(meta) === v
+                            ? "bg-primary text-white border-primary"
+                            : "hover:border-primary hover:text-primary"
+                        }`}
+                      >
+                        {v}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {metaInvalida && meta !== "" && (
+                  <p className="text-xs text-destructive">Meta deve ser entre 1% e 100%</p>
+                )}
+              </div>
+
+              <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Faixas</p>
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="w-2.5 h-2.5 rounded-full bg-green-500 shrink-0" />
+                    <span>Até <strong>{metaNum.toFixed(1)}%</strong></span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0" />
+                    <span><strong>{metaNum.toFixed(1)}%</strong> — <strong>{(metaNum * 1.15).toFixed(1)}%</strong></span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
+                    <span>Acima de <strong>{(metaNum * 1.15).toFixed(1)}%</strong></span>
+                  </div>
                 </div>
               </div>
-              {metaInvalida && meta !== "" && (
-                <p className="text-xs text-destructive">Meta deve ser entre 1% e 100%</p>
+            </CardContent>
+          </Card>
+
+          {/* Salvar */}
+          <div className="flex items-center gap-3">
+            <Button onClick={handleSave} disabled={metaInvalida} className="w-full sm:w-auto">
+              Salvar configurações
+            </Button>
+            {saved && (
+              <span className="flex items-center gap-1.5 text-sm text-green-600">
+                <CheckCircle2 className="w-4 h-4" />
+                Salvo
+              </span>
+            )}
+          </div>
+
+          {/* Backup */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Backup & Restauração</CardTitle>
+              <CardDescription>Exporte ou restaure todos os dados do sistema.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" className="gap-2" onClick={handleExport}>
+                  <Download className="w-4 h-4" />
+                  Exportar
+                </Button>
+                <Button variant="outline" size="sm" className="gap-2" onClick={handleImportClick} disabled={restoring}>
+                  {restoring ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  {restoring ? "Restaurando…" : "Restaurar"}
+                </Button>
+                <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleFileChange} />
+              </div>
+
+              {restoreError && (
+                <div className="flex items-start gap-2 text-sm text-destructive border border-destructive/30 bg-destructive/5 rounded-lg p-3">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                  {restoreError}
+                </div>
               )}
-              <p className="text-xs text-muted-foreground">
-                Produtos com CMV acima desta meta são exibidos em alerta vermelho. A faixa âmbar vai até{" "}
-                <strong>{(metaNum * 1.15).toFixed(1)}%</strong> (+15%).
-              </p>
-            </div>
+              {restoreOk && (
+                <div className="flex items-center gap-2 text-sm text-green-600">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Dados restaurados com sucesso!
+                </div>
+              )}
 
-            <div className="border rounded-lg p-3 space-y-2 bg-muted/30">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Faixas de classificação</p>
-              <div className="flex items-center gap-2 text-sm">
-                <span className="w-3 h-3 rounded-sm bg-green-500 shrink-0" />
-                <span>Dentro da meta: até <strong>{metaNum.toFixed(1)}%</strong></span>
+              <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Dados atuais</p>
+                <div className="flex flex-wrap gap-3 text-sm mt-1">
+                  <span><strong>{mps.length}</strong> MP</span>
+                  <span><strong>{receitas.length}</strong> receitas</span>
+                  <span><strong>{produtos.length}</strong> produtos</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                <span className="w-3 h-3 rounded-sm bg-amber-400 shrink-0" />
-                <span>Atenção: <strong>{metaNum.toFixed(1)}%</strong> — <strong>{(metaNum * 1.15).toFixed(1)}%</strong></span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <span className="w-3 h-3 rounded-sm bg-red-500 shrink-0" />
-                <span>Acima da meta: acima de <strong>{(metaNum * 1.15).toFixed(1)}%</strong></span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Categorias */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Categorias</CardTitle>
-            <CardDescription>
-              Personalize as categorias disponíveis para matérias-primas e produtos. Pode deixar vazio se preferir não categorizar.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <GerenciadorCategorias
-              titulo="Matérias-primas"
-              descricao="Usadas no cadastro de ingredientes e insumos."
-              categorias={localCategoriasInsumo}
-              defaults={DEFAULT_CATEGORIAS_INSUMO}
-              onChange={setLocalCategoriasInsumo}
-            />
-            <div className="border-t" />
-            <GerenciadorCategorias
-              titulo="Produtos"
-              descricao="Usadas no cadastro de produtos do cardápio."
-              categorias={localCategoriasProduto}
-              defaults={DEFAULT_CATEGORIAS_PRODUTO}
-              onChange={setLocalCategoriasProduto}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Salvar */}
-        <div className="flex items-center gap-3">
-          <Button onClick={handleSave} disabled={metaInvalida}>
-            Salvar configurações
-          </Button>
-          {saved && (
-            <span className="flex items-center gap-1.5 text-sm text-green-600">
-              <CheckCircle2 className="w-4 h-4" />
-              Salvo com sucesso
-            </span>
-          )}
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Backup & Restore */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Backup & Restauração</CardTitle>
-            <CardDescription>
-              Exporte todos os dados para um arquivo JSON ou restaure a partir de um backup anterior.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-3">
-              <Button variant="outline" className="gap-2" onClick={handleExport}>
-                <Download className="w-4 h-4" />
-                Exportar backup
-              </Button>
-              <Button variant="outline" className="gap-2" onClick={handleImportClick} disabled={restoring}>
-                {restoring ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                {restoring ? "Restaurando…" : "Restaurar backup"}
-              </Button>
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".json"
-                className="hidden"
-                onChange={handleFileChange}
+        {/* Coluna direita — 3/5 */}
+        <div className="xl:col-span-3">
+          <Card className="h-full">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Categorias</CardTitle>
+              <CardDescription>
+                Personalize as categorias de matérias-primas e produtos. Pode deixar vazio se preferir não categorizar.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-8">
+              <GerenciadorCategorias
+                titulo="Matérias-primas"
+                descricao="Usadas no cadastro de ingredientes e insumos."
+                categorias={localCategoriasInsumo}
+                defaults={DEFAULT_CATEGORIAS_INSUMO}
+                onChange={setLocalCategoriasInsumo}
               />
-            </div>
+              <div className="border-t" />
+              <GerenciadorCategorias
+                titulo="Produtos"
+                descricao="Usadas no cadastro de produtos do cardápio."
+                categorias={localCategoriasProduto}
+                defaults={DEFAULT_CATEGORIAS_PRODUTO}
+                onChange={setLocalCategoriasProduto}
+              />
+            </CardContent>
+          </Card>
+        </div>
 
-            {restoreError && (
-              <div className="flex items-start gap-2 text-sm text-destructive border border-destructive/30 bg-destructive/5 rounded-lg p-3">
-                <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-                {restoreError}
-              </div>
-            )}
-            {restoreOk && (
-              <div className="flex items-center gap-2 text-sm text-green-600">
-                <CheckCircle2 className="w-4 h-4" />
-                Dados restaurados com sucesso!
-              </div>
-            )}
-
-            <div className="border rounded-lg p-3 bg-muted/30 space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Dados atuais</p>
-              <div className="flex flex-wrap gap-4 text-sm">
-                <span><strong>{mps.length}</strong> matérias-primas</span>
-                <span><strong>{receitas.length}</strong> receitas</span>
-                <span><strong>{produtos.length}</strong> produtos</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

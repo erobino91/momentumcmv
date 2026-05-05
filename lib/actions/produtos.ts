@@ -1,6 +1,7 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
+import { unstable_cache, revalidateTag } from "next/cache";
 import { db } from "@/lib/prisma";
 import { Produto, ReceitaIngrediente } from "@/types";
 
@@ -28,13 +29,21 @@ async function getUserId() {
   return userId;
 }
 
+const _getProdutos = unstable_cache(
+  async (userId: string) => {
+    const rows = await db.produto.findMany({
+      where: { userId },
+      orderBy: { criadoEm: "asc" },
+    });
+    return rows.map(toType);
+  },
+  ["produtos"],
+  { tags: ["produtos"], revalidate: 30 }
+);
+
 export async function getProdutos(): Promise<Produto[]> {
   const userId = await getUserId();
-  const rows = await db.produto.findMany({
-    where: { userId },
-    orderBy: { criadoEm: "asc" },
-  });
-  return rows.map(toType);
+  return _getProdutos(userId);
 }
 
 export async function criarProduto(
@@ -54,6 +63,7 @@ export async function criarProduto(
       observacao: data.observacao,
     },
   });
+  revalidateTag("produtos", "max");
   return toType(row);
 }
 
@@ -75,12 +85,14 @@ export async function atualizarProduto(
       observacao: data.observacao,
     },
   });
+  revalidateTag("produtos", "max");
   return toType(row);
 }
 
 export async function removerProduto(id: string): Promise<void> {
   const userId = await getUserId();
   await db.produto.delete({ where: { id, userId } });
+  revalidateTag("produtos", "max");
 }
 
 export async function duplicarProduto(id: string): Promise<Produto> {
@@ -100,5 +112,6 @@ export async function duplicarProduto(id: string): Promise<Produto> {
       observacao: orig.observacao,
     },
   });
+  revalidateTag("produtos", "max");
   return toType(row);
 }
